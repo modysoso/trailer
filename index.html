@@ -20,8 +20,19 @@
     '?autoplay=1&controls=0&enablejsapi=1&rel=0&playsinline=1&iv_load_policy=3&fs=0&disablekb=1' +
     '&origin=' + encodeURIComponent(location.origin);
   document.body.appendChild(f);
+  // TEMP diagnostic: shows the quality YouTube is really playing (remove later)
+  var dg = document.createElement('div');
+  dg.style.cssText = 'position:fixed;right:16px;top:12px;z-index:9;font:24px sans-serif;color:#ff0;background:rgba(0,0,0,.6);padding:4px 10px';
+  dg.textContent = 'page 720 test';
+  document.body.appendChild(dg);
+  function diag(q) {
+    dg.textContent = (q || '?') + '  |  page ' + innerWidth + 'x' + innerHeight + '  dpr ' + (window.devicePixelRatio || 1) + '  player ' + f.offsetWidth + 'x' + f.offsetHeight;
+  }
   window.addEventListener('message', function (e) {
-    if (e.source === f.contentWindow) { try { parent.postMessage(e.data, '*'); } catch (x) {} }
+    if (e.source === f.contentWindow) {
+      try { var d = JSON.parse(e.data); if (d && d.info && d.info.playbackQuality) diag(d.info.playbackQuality); } catch (x) {}
+      try { parent.postMessage(e.data, '*'); } catch (x) {}
+    }
     else if (e.source === parent) { try { f.contentWindow.postMessage(e.data, '*'); } catch (x) {} }
   });
 })();
