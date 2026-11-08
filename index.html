@@ -4,12 +4,13 @@
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>ModySoso trailer</title>
-<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{border:0;width:100%;height:100%}</style>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{border:0;width:66.6667%;height:66.6667%;transform:scale(1.5);transform-origin:0 0}</style>
 </head>
 <body>
 <script>
 // ModySoso IPTV trailer page.
 // Plays one YouTube video and passes messages between the TV app and YouTube, unchanged.
+// The player is 2/3 size and scaled up 1.5x, so YouTube picks 720p instead of 1080p (smoother on the TV browser).
 (function () {
   var p = new URLSearchParams(location.search), id = p.get('v') || '';
   if (!/^[\w-]{11}$/.test(id)) { document.body.textContent = ''; return; }
