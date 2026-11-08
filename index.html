@@ -4,13 +4,12 @@
 <meta charset="utf-8">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>ModySoso trailer</title>
-<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{border:0;width:66.6667%;height:66.6667%;transform:scale(1.5);transform-origin:0 0}</style>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{border:0;width:100%;height:100%}</style>
 </head>
 <body>
 <script>
 // ModySoso IPTV trailer page.
 // Plays one YouTube video and passes messages between the TV app and YouTube, unchanged.
-// The player is 2/3 size and scaled up 1.5x, so YouTube picks 720p instead of 1080p (smoother on the TV browser).
 (function () {
   var p = new URLSearchParams(location.search), id = p.get('v') || '';
   if (!/^[\w-]{11}$/.test(id)) { document.body.textContent = ''; return; }
@@ -20,17 +19,38 @@
     '?autoplay=1&controls=0&enablejsapi=1&rel=0&playsinline=1&iv_load_policy=3&fs=0&disablekb=1' +
     '&origin=' + encodeURIComponent(location.origin);
   document.body.appendChild(f);
-  // TEMP diagnostic: shows the quality YouTube is really playing (remove later)
+
+  // ---- TEMP diagnostic (remove later) ----
+  // 0-20s: messages go to the app as usual. 20-40s: messages to the app are paused. After 40s: back to normal.
+  var t0 = Date.now(), q = '?', msgs = 0, sent = 0, held = 0, blurs = 0, longF = 0, maxGap = 0, last = 0, rate = 0, srate = 0;
   var dg = document.createElement('div');
-  dg.style.cssText = 'position:fixed;right:16px;top:12px;z-index:9;font:24px sans-serif;color:#ff0;background:rgba(0,0,0,.6);padding:4px 10px';
-  dg.textContent = 'page 720 test';
+  dg.style.cssText = 'position:fixed;right:16px;top:12px;z-index:9;font:24px sans-serif;color:#ff0;background:rgba(0,0,0,.6);padding:4px 10px;white-space:pre;text-align:right';
   document.body.appendChild(dg);
-  function diag(q) {
-    dg.textContent = (q || '?') + '  |  page ' + innerWidth + 'x' + innerHeight + '  dpr ' + (window.devicePixelRatio || 1) + '  player ' + f.offsetWidth + 'x' + f.offsetHeight;
+  function relayOn() { var s = (Date.now() - t0) / 1000; return s < 20 || s >= 40; }
+  function frame(ts) {
+    if (last) { var g = ts - last; if (g > 50) longF++; if (g > maxGap) maxGap = g; }
+    last = ts; requestAnimationFrame(frame);
   }
+  requestAnimationFrame(frame);
+  window.addEventListener('blur', function () { blurs++; });
+  setInterval(function () {
+    rate = msgs; srate = sent; msgs = 0; sent = 0;
+    var s = Math.floor((Date.now() - t0) / 1000);
+    dg.textContent = s + 's  ' + (relayOn() ? 'RELAY ON' : 'RELAY OFF') + '  ' + q +
+      '\nmsgs/s ' + rate + '  to app/s ' + srate + '  held ' + held +
+      '\nslow frames ' + longF + '  worst ' + Math.round(maxGap) + 'ms  blur ' + blurs;
+    maxGap = 0;
+  }, 1000);
+  // ----
+
   window.addEventListener('message', function (e) {
     if (e.source === f.contentWindow) {
-      try { var d = JSON.parse(e.data); if (d && d.info && d.info.playbackQuality) diag(d.info.playbackQuality); } catch (x) {}
+      msgs++;
+      var d = null; try { d = JSON.parse(e.data); } catch (x) {}
+      if (d && d.info && d.info.playbackQuality) q = d.info.playbackQuality;
+      // while paused, only infoDelivery is held back; state changes and errors still go to the app
+      if (!relayOn() && d && d.event === 'infoDelivery') { held++; return; }
+      sent++;
       try { parent.postMessage(e.data, '*'); } catch (x) {}
     }
     else if (e.source === parent) { try { f.contentWindow.postMessage(e.data, '*'); } catch (x) {} }
