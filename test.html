@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>ModySoso trailer test</title>
+<style>html,body{margin:0;height:100%;background:#000;overflow:hidden}iframe{border:0;width:100%;height:100%}#m{position:absolute;left:30px;top:30px;color:#fff;font:24px sans-serif;background:rgba(0,0,0,.6);padding:8px 16px}</style>
+</head>
+<body>
+<div id="m">test.html (muted) - OK: play/pause - Back: exit</div>
+<script>
+// Temporary test page for ModySoso Trailer Test (delete after the test).
+// Same as index.html but starts muted, so the TV lets it start by itself. OK = play/pause, Back = go back (the app then exits).
+(function () {
+  var p = new URLSearchParams(location.search), id = p.get('v') || '';
+  if (!/^[\w-]{11}$/.test(id)) { document.body.textContent = ''; return; }
+  var f = document.createElement('iframe'), playing = true;
+  f.allow = 'autoplay; encrypted-media';
+  f.src = 'https://www.youtube.com/embed/' + id +
+    '?autoplay=1&mute=1&controls=0&enablejsapi=1&rel=0&playsinline=1&iv_load_policy=3&fs=0&disablekb=1' +
+    '&origin=' + encodeURIComponent(location.origin);
+  document.body.appendChild(f);
+  function send(fn) { try { f.contentWindow.postMessage(JSON.stringify({ event: 'command', func: fn, args: [] }), '*'); } catch (e) {} }
+  document.addEventListener('keydown', function (e) {
+    if (e.keyCode === 13) { playing = !playing; send(playing ? 'playVideo' : 'pauseVideo'); }
+    else if (e.keyCode === 10009 || e.keyCode === 8) history.back();
+  });
+  setTimeout(function () { document.getElementById('m').style.display = 'none'; }, 6000);
+})();
+</script>
+</body>
+</html>
